@@ -412,7 +412,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord -> emit_load_mixed naturalsize 0
+    | Code.Ord|Code.Pte -> emit_load_mixed naturalsize 0
     | Code.Tag -> LDG.emit_load
     let emit_obs_not_value = OBS.emit_load_not_value
     let emit_obs_not_eq = OBS.emit_load_not_eq
@@ -842,6 +842,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
+        | R,Some (Pte Read,None) ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some r,init,cs,st
+        | W,Some (Pte (Set _),None) ->
+            Warn.fatal "Not Yet either"
+        | _,Some (Pte _,_) -> assert false
         | _,Some (Plain,None) -> assert false
         | _,Some (Tag,_) -> assert false
         | J,_ -> emit_joker st init
@@ -1138,6 +1144,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,Instruction c::cs,st
+          | (W,(Some (Pte (Set _),None)))
+          | (R,(Some (Pte Read,None)))
+            ->
+              Warn.fatal "Not Yet"
+          | (W|R),Some (Pte _,_) ->
+              assert false
           | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
@@ -1230,6 +1242,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
+          | Some (Pte (Set _),None) -> Warn.fatal "Not Yet either"
+          | Some ((Pte _,Some _)|(Pte Read,_)) -> assert false
           | Some (Plain,None) -> assert false
           | Some (Tag,Some _) -> assert false
           end

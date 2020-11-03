@@ -28,6 +28,8 @@ type t = {
 let default s =
   { oa=Misc.add_physical s; valid=1; af=1; db=1; dbm=0; }
 
+let set_oa p s = { p with oa = Misc.add_physical s; }
+
 let is_default t = t.valid=1 && t.af=1 && t.db=1 && t.dbm=0
 
 let pp p =

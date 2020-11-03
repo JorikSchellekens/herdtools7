@@ -50,7 +50,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
   end = functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
-    type v = I of int | S of string
+    type v = I of int | S of string | P of PTEVal.t
+    let pte_def = P (PTEVal.default "*")
+    let () = ignore pte_def
+
     module VSet =
       MySet.Make
         (struct
@@ -59,8 +62,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let compare v1 v2 = match v1,v2 with
           | I i1,I i2 -> compare i1 i2
           | S s1,S s2 -> String.compare s1 s2
-          | S _,I _ -> -1
-          | I _,S _ -> +1
+          | P p1,P p2 -> PTEVal.compare p1 p2
+          | ((P _|S _),I _)
+          | (P _,S _)
+               -> -1
+          | (I _,(S _|P _))
+          | (S _,P _)
+            -> +1
         end)
     type vset = VSet.t
     type fenv = (C.A.location * vset) list
@@ -111,6 +119,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (I evt.C.C.v)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
+            | Code.Pte -> None
             end
         | Some Code.W -> assert (evt.C.C.bank = Code.Ord) ; Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
@@ -145,6 +154,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
+      | P p -> PTEVal.pp p
 
     let dump_atom r v = sprintf "%s=%s" (C.A.pp_location r) (dump_val v)
 

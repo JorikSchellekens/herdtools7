@@ -506,7 +506,8 @@ let max_set = IntSet.max_elt
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
-      | Code _,_ -> i,code,f,st
+      | Data _,Pte -> assert false
+      | Code _,_ -> i,code,f,st            
     else i,code,f,st
 
 (******************************************)
